@@ -1,0 +1,467 @@
+<html>
+	<head>
+		<title>Karaoke Presenter</title>
+		<script src="/public/javascripts/jquery.min.js"></script>
+		<script src="/public/javascripts/jquery.marquee.js"></script>
+		<script type='text/javascript' src='/public/javascripts/knockout.js'></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="/public/javascripts/mousetrap.js"></script>
+		<script type="text/javascript" src="/public/javascripts/video-js/video.js"></script>
+		<script type="text/javascript" src="/public/javascripts/mousetrap.js"></script>
+		<link rel="stylesheet" type="text/css" href="/public/javascripts/video-js/video-js.css"/>
+		<link rel="stylesheet" type="text/css" href="/public/stylesheets/bootstrap.min.css"/>
+
+		<script>
+			var app = (function() {
+
+
+				var presenterModel;
+				function initModel() {
+					presenterModel = {
+		    			currentSinger: ko.observable({}),
+		    			queue: ko.observableArray([]),
+		    			isPlaying: ko.observable(false),
+		    			singerReady: ko.observable(false),
+		    			queueString: ko.observable("")
+			    	}
+
+
+			    	presenterModel.hasSinger = ko.computed(function() {
+			    		var curr = this.currentSinger();
+				        return curr && curr.singer != null;
+				    }, presenterModel);
+
+				    presenterModel.nextSingersText = ko.computed(function() {
+
+				    }, presenterModel);
+
+				    presenterModel.remainingTime = ko.computed(function() {
+
+				    }, presenterModel);
+
+				    presenterModel.nextSingerOverlayVisible = ko.computed(function() {
+ 						return this.hasSinger()  && !this.singerReady()
+				    }, presenterModel);
+
+				   
+
+			    	ko.applyBindings(presenterModel, document.getElementById("container"));
+				}
+
+				var isPlaying = false;
+				
+				var player = null;
+				var socket = null;
+				
+
+				function showNextSinger() {
+					player.pause();
+					presenterModel.isPlaying(false);
+				}
+
+				function restartSong() {
+					console.log("restarting song");
+					player.currentTime = 0;
+				}
+
+				function setVolume(newVolume) {
+					player.volume(newVolume);
+					emitVolume();
+
+				}
+				function emitVolume() {
+					socket.emit("volume", player.volume());
+				}
+
+				function playPause() {
+					if (isPlaying) {
+						player.pause();
+					}
+					else {
+						player.play();
+					}	
+					isPlaying = !isPlaying;
+
+				}
+
+
+				function onVideoEnd() {
+					socket.emit("playerend");
+					presenterModel.singerReady(false);
+				}
+
+				function onSingerReadyConfirm() {
+					console.log("Singer is ready!");
+				}
+
+
+
+				this.init = function () {
+					console.log("starting player");
+					
+					player = videojs("karaoke_player");
+
+					player.ready(function(){
+						this.on("ended", onVideoEnd);
+					});
+
+					
+
+					initSockets();
+					initModel();
+
+
+					$.ajax({
+					  url: "/api/currentsinger",
+					  success: function(singer) {
+					  		console.log("singer before parse is " + singer);
+							singer = (singer) ? JSON.parse(singer) : {};
+							console.log(JSON.stringify());
+							console.log("singer is " + singer.singer);
+							presenterModel.currentSinger(singer);
+							player.src( "/videos/" + singer.filename);
+                      }
+					});
+
+					updateMarquee();
+
+				}
+
+				function updateMarquee() {
+						$.ajax({
+						  url: "/api/queue",
+						  success: function(queue) {
+								console.log("got queue");
+								queue = JSON.parse(queue);
+								console.log("parsed queue");
+								presenterModel.queue(queue);
+								console.log("queue is " + JSON.stringify(presenterModel.queue));
+
+								//pop the first three of the wqueue
+
+								var str = "";
+								if (queue && queue.length > 0) str += "1. " + queue[0].singer;
+								if (queue && queue.length > 1) str += " 2. " + queue[1].singer;
+								if (queue && queue.length > 2) str += " 3. " + queue[2].singer;
+
+								
+								console.log(str);
+								presenterModel.queueString(str);
+
+								
+							
+								
+	                      }
+						});
+
+
+
+				}
+				
+
+				function initSockets() {
+					socket = io.connect();
+					socket.on('connect', function () {
+						console.log("connected to socket.io server!");
+					});
+
+					socket.on("pause", function() {
+						console.log("got pause");
+						player.pause();
+					});
+
+					socket.on("play", function() {
+						console.log("got play");
+						player.play();
+					});
+
+					socket.on("nextsinger", function(singer) {
+						console.log("going to next singer " + JSON.stringify(singer));
+						if (singer == null) singer = {}
+						presenterModel.currentSinger(singer);
+						presenterModel.singerReady(false);
+						presenterModel.isPlaying(false);
+						player.src( "/videos/" + singer.filename);
+
+
+						//request queue
+						updateMarquee();
+
+					});
+
+					socket.on("set_volume", function(data) {
+						console.log("Setting volume to " + data.volume);
+						player.volume(parseFloat(data.volume));
+
+					});
+
+					socket.on("singerready", function() {
+						presenterModel.singerReady(true);
+						player.play();
+					});
+
+					socket.on("queueempty", function() {
+						console.log("queue is empty");
+					});
+					socket.on("queue", function() {
+						updateMarquee();
+					});
+
+					//TODO: Move this
+					var remote_client = <%=remote_client%>;
+					if( remote_client) {
+						console.log("remote client connected");
+						socket.on("presenter_timing", function(data) {
+
+							console.log("got remote client data " + JSON.stringify(data));
+							var position = player.currentTime();
+							var diff = Math.abs(position - data.position);
+							console.log("diff is " + diff);
+							if (diff > 0.25) {
+								console.log("setting remote player position to " + position);
+								player.currentTime(data.position);
+							}
+						});
+					}
+					else {
+						console.log("setting timing interval");
+						setInterval(function() {	
+							console.log("broadcasting time " + player.currentTime());
+							socket.emit("presenter_timing", { position: player.currentTime() })
+						}, 1000);	
+					}
+
+
+
+
+				}
+				
+				return this;
+			})();
+
+			$(app.init);
+			$(function() {
+				
+				Mousetrap.bind('up', function() {
+				    var elem = document.getElementById("container");
+
+				    if (elem.requestFullscreen) {
+					  elem.requestFullscreen();
+					} else if (elem.msRequestFullscreen) {
+					  elem.msRequestFullscreen();
+					} else if (elem.mozRequestFullScreen) {
+					  elem.mozRequestFullScreen();
+					} else if (elem.webkitRequestFullscreen) {
+					  elem.webkitRequestFullscreen();
+					}
+
+				});
+
+				
+				
+				
+
+
+
+				
+
+			});
+	
+
+		</script>
+
+
+		<style type="text/css">
+			html, body,form { height: 100%;  }
+			body { 
+			    margin: 0;  
+			    padding: 0;
+			}
+			#container { 
+			    width: 100%;
+			    height: 100%; 
+			    padding: 0; 
+			    vertical-align: middle;     
+			}
+			
+
+			.instructions {
+				font-size: 20px;
+			}
+
+			#container:fullscreen {
+			    background-color: black;
+			}
+			#container:-webkit-full-screen {
+			    background-color: black;
+			}
+			#container:-moz-full-screen {
+			    background-color: black;
+			}
+
+			
+			div#container {
+				position: absolute;
+				top:0;
+				bottom: 0;
+				width: 100%;
+			}
+			div#header {
+				position:absolute;
+				width:100%;
+				top:0;
+				height: 50px;
+				
+				padding: 5px;
+				
+			}
+			div#footer {
+				position:absolute;
+				width:100%;
+				bottom: 0;
+				height: 50px;
+				
+				
+				text-align: center;
+
+				border-top: 2px solid #c0c0c0;
+
+			}
+			div#content {
+				top:50px;
+				bottom:100px;
+				width:100%;
+				position: absolute;;
+				background-color: #000000;
+			}
+
+			#container {
+				color:white;
+			}
+
+			body {
+				font-size: 20px;
+			}
+			h1 {
+				font-size: 32px;
+			}
+
+
+
+		</style>
+	</head>
+	<body>
+
+		<div id="container">
+
+
+			<div id="header">
+				
+				<div style="float:left">Welcome to Marcel&Kerry-oke!</div>
+				<div style="float:right">
+
+					<div>
+						
+						<span style="margin-right: 10px"><img src="/public/images/wifi_icon.png" width="32"/> WIFI: marcelandkerry</span>
+						<span><img src="/public/images/chrome_icon.png" width="32"/> http://karaoke<span>
+
+							
+					</div>
+
+				</div>
+				<div style="clear:both"></div>
+
+				
+			</div>
+			<div id="content">
+				
+				<div id="next_singer_overlay" data-bind="visible: nextSingerOverlayVisible()" style="text-align: center">
+					<h3>Next up:</h3>
+					<h1 data-bind="text: currentSinger().singer"></h1>
+					<h3>performing</h3>
+					<h1 data-bind="text: currentSinger().song"></h1>
+
+					
+				</div>
+
+
+				<div id="player_container" data-bind="visible: singerReady()">
+					<video id="karaoke_player" class="video-js vjs-default-skin"
+					  controls preload="auto" width="100%" height="100%"
+					  data-setup='{"example_option":true}'
+					  >
+					 	<source src="" type='video/mp4' />
+					</video>
+				</div>
+
+				<div id="welcome" style="text-align:center" data-bind="visible: !hasSinger()">
+					<p>Welcome to Marcel&Kerry-oke!</p>
+
+					<p>To sing:</p>
+					<p>Connect to WIFI marcelandkerry</p>
+					<p>Open your browser to http://karaoke</p>
+
+
+				</div>
+
+			</div>
+
+
+<!-- 
+			<div id="footer">
+				<div id="marquee_test">
+					This is some text text that should be scrolling on man, it will scroll far i think and hope
+				</div>
+
+			</div>
+ -->
+
+			<!-- <div id="footer">
+				<div style="float:left;">Hello</div>
+				<div style="float:right;">
+					<ol>
+						<li>
+							<div><img src="/public/images/wifi_icon.png" width="32"/> WIFI: marcelandkerry</div>
+						</li>
+						<li>
+							<div><img src="/public/images/chrome_icon.png" width="32"/> http://karaoke</div>		
+						</li>
+
+					</ol>
+					
+					
+				</div>
+
+			</div> -->
+
+			<div id="footer">
+				<div>
+					<div data-bind="if: queue().length > 0">
+						The next singers are <span data-bind="text: queueString()"></span>
+					</div>
+					<div data-bind="if: queue().length == 0">
+						There are no singers
+					</div>
+
+				</div>
+				
+			</div>
+
+				
+
+
+			
+			
+
+
+
+		</div>
+
+		
+
+
+
+
+	</body>
+
+</html>

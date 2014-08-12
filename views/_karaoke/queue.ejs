@@ -1,0 +1,105 @@
+<html>
+	<head>
+		<title>Karaoke Queue</title>
+		
+		<link rel="stylesheet" href="/public/stylesheets/jquery-ui-smoothness.css">
+
+		<script src="/public/javascripts/jquery.min.js"></script>
+		<script src="/public/javascripts/jquery-ui.js"></script>
+		<script src="/public/javascripts/knockout.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+
+			var app = (function() {
+
+				var socket = null;
+				var queueModel = null;
+
+				this.init = function() {
+					socket = io.connect();
+					socket.on('connect', function () {
+						console.log("connected to socket.io server!");
+						socket.on("queue", function(data) {
+							queueModel.updateQueue(data);
+						});
+					});
+
+					socket.on("nextsinger", function(singer) {
+						queueModel.currentSinger(singer)
+					});
+
+					queueModel = {
+			    		queue: ko.observableArray([]),
+			    		currentSinger: ko.observable({}),
+			    		updateQueue: function(queue) {
+			    			queueModel.queue.removeAll();
+							ko.utils.arrayPushAll(queueModel.queue(), queue);
+							queueModel.queue.valueHasMutated();
+			    		}
+			    	};
+					ko.applyBindings(queueModel, document.getElementById("queue"));
+					
+
+					$.ajax({
+				 		url: "/api/queue"
+					}).done(function(response) {
+						console.log("got initial queue response");
+						queueModel.updateQueue($.parseJSON(response));				
+					});
+
+					$.ajax({
+				 		url: "/api/currentSinger"
+					}).done(function(response) {
+						console.log("got singer " + response);
+						queueModel.currentSinger($.parseJSON(response));				
+					});
+				}
+
+				return this;
+		})();
+
+		$(app.init);
+		</script>
+
+		<style>
+
+			.singer {
+				background-color: green;
+				font-weight: bold;
+				color: white;
+				padding-right: 10;
+				padding-left: 10;
+			}
+			.song {
+
+			}
+
+			#queueList li {
+				margin-top: 5px;
+				cursor: default;
+			}
+
+		</style>
+
+	
+	<body>
+		<fieldset id="queue">
+			<legend>Queue</legend>
+			
+			<ul id="currentSinger">
+				<li>
+				  	<span class="singer" data-bind="text: currentSinger().singer"></span>
+				  	<span class="song" data-bind="text: currentSinger().song"></span>
+			  </li>
+			</ul>
+
+			<ol id="queueList" data-bind="foreach: queue">
+			  <li data-bind="attr : { perfid: perfid}" >
+			  	<span class="singer" data-bind="text: singer"></span>
+			  	<span class="song" data-bind="text: song"></span>
+			  </li>
+			</ol>
+		</fieldset>	
+	</body>
+
+</html>
