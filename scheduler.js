@@ -7,21 +7,21 @@ var Schema = mongoose.Schema;
 
 
 
-var UserSchema = new Schema({
-	name: String,
-	isTeacher: Boolean
-})
+// var UserSchema = new Schema({
+// 	name: String,
+// 	isTeacher: Boolean
+// })
 
-var SlotSchema = new Schema({
-	startTime: Date,
-	team: { type: Schema.ObjectId, ref:'User'}
-})
+// var SlotSchema = new Schema({
+// 	startTime: Date,
+// 	team: { type: Schema.ObjectId, ref:'User'}
+// })
 
-var UserModel = mongoose.model('User', UserSchema);
-var SlotSchema = mongoose.model('Slot', SlotSchema);
+// var UserModel = mongoose.model('User', UserSchema);
+// var SlotSchema = mongoose.model('Slot', SlotSchema);
 
-//TODO: Make this based on environment variable
-var connection = mongoose.createConnection("mongodb://localhost/okpanda");
+// //TODO: Make this based on environment variable
+// var connection = mongoose.createConnection("mongodb://localhost/okpanda");
 
 
 
