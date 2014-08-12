@@ -3,6 +3,7 @@ exports.checkLogin = function(req, res,next) {
 	
 	var isHome = req.url == '/';
 	var isLoginPage = req.url.indexOf("/login") == 0;
+	console.log("LOGIN PAGE? " + isLoginPage);
 	var isPopulate = req.url == "/populate"; 
 	var userLoggedIn = req.session && req.session.username;
 
@@ -12,6 +13,7 @@ exports.checkLogin = function(req, res,next) {
 		next();
 	}
 	else {
+		console.log("user is not logged in");
 		res.redirect("/login");
 	}
 }

@@ -1,7 +1,7 @@
 var models = require("./models.js");
 var http = require("http");
 var populate = require("./populate.js");
-
+var moment = require("moment");
 //Returns an object like with first and last properites, indicating the first and last days of the week
 
 function getWeekBounds(date) {
@@ -62,7 +62,6 @@ function getTeacherSchedule(teacherUsername, date, openOnly, cb) {
 }
 
 
-
 exports.setupRoutes = function(app) {
 	app.get("/", function(req, res) {
 		if (req.session.isTeacher) {
@@ -97,8 +96,9 @@ exports.setupRoutes = function(app) {
 	//This should really be a POOST
 	app.get("/login/:username", function(req, res) {
 		models.User.findOne({ username: req.params.username }).lean().exec(function(err, user) {
-			req.session.username = models.User.username;
-			req.session.isTeacher = models.User.isTeacher;
+			console.log("User logged in successfully");
+			req.session.username = user.username;
+			req.session.isTeacher = user.isTeacher;
 			res.redirect("/");
 		})
 	})
