@@ -21,15 +21,16 @@ exports.populate = function() {
 		models.User.create(defaultUsers, function(err) {
 			if (err) reject(err);
 			console.log("Created teacher and student, inserting schedule slot");
+			resolve();
 			
-			models.User.findOne({ username: "aeinstein"}).exec(function(err, einstein) {
-				new models.ScheduleSlot({
-					time: new Date(),
-					teacher: einstein
-				}).save(function(err, res) {
-					resolve();
-				});
-			})						
+			// models.User.findOne({ username: "aeinstein"}).exec(function(err, einstein) {
+			// 	new models.ScheduleSlot({
+			// 		time: new Date(),
+			// 		teacher: einstein
+			// 	}).save(function(err, res) {
+			// 		resolve();
+			// 	});
+			// })						
 
 		})
 	})
