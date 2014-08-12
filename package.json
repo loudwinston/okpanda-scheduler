@@ -7,16 +7,11 @@
     "express": "3.3.5",
     "mongoose": "^3.8.14",
     "optimist": "*",
-    "sequelize": "^1.7.9",
-    "sequelize-sqlite": "^1.7.0",
     "socket.io": "*",
-    "socket.io-wildcard": "~0.1.1",
-    "sqlite3": "^2.2.7"
+    "socket.io-wildcard": "~0.1.1"
   },
-  "scripts": {
-    "start": "node --harmony --use_strict --harmony_generators index.js"
-  },
-  "engines": {
-    "node": "^0.11.9"
+
+  "devDependencies": {
+    "forever-monitor" : "*"
   }
 }

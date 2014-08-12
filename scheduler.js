@@ -2,52 +2,51 @@ var express = require("express");
 var Promise = require("bluebird");
 var co = Promise.coroutine;
 var mongoose = require("mongoose");
+var http = require("http");
 var Schema = mongoose.Schema;
-co(function* (){
-	
-
-	var UserSchema = new Schema({
-		name: String,
-		isTeacher: boolean
-	})
-
-	var SlotSchema = new Schema({
-		startTime: Date,
-		team: { type: Schema.ObjectId, ref:'User'}
-	})
-
-	var UserModel = mongoose.model('User', UserSchema);
-	var SlotSchema = mongoo.semodel('Slot', SlotSchema);
-
-	//TODO: Make this based on environment variable
-	var connection = mongoose.createConnection("mongdb://localhost/okpanda");
 
 
 
+var UserSchema = new Schema({
+	name: String,
+	isTeacher: Boolean
+})
 
-	var app = express();
+var SlotSchema = new Schema({
+	startTime: Date,
+	team: { type: Schema.ObjectId, ref:'User'}
+})
 
-	app.set('port', config.port);
-	app.set('views', __dirname + '/views');
-	app.set('view engine', 'ejs');
-	app.use(express.logger('dev'));
-	app.use(express.bodyParser());
-	app.use(express.favicon("/public/favicon.ico"));
+var UserModel = mongoose.model('User', UserSchema);
+var SlotSchema = mongoose.model('Slot', SlotSchema);
 
-	app.use('/public', express.static("public"));
-
-
-	app.get("/", function(req, res) {
-		res.end("App is running, yay!");
-	})
+//TODO: Make this based on environment variable
+var connection = mongoose.createConnection("mongodb://localhost/okpanda");
 
 
-	var httpServer = http.createServer(app);
-	yield httpServer.listen(app.get("port"));
-	yield socketio.listen(httpServer);
+
+
+var app = express();
+
+app.set('port', process.env.PORT || 3000);
+app.set('views', __dirname + '/views');
+app.set('view engine', 'ejs');
+app.use(express.logger('dev'));
+app.use(express.bodyParser());
+app.use(express.favicon("/public/favicon.ico"));
+
+app.use('/public', express.static("public"));
+
+
+app.get("/", function(req, res) {
+	res.end("App is running, yay!");
+})
+
+
+var httpServer = http.createServer(app);
+httpServer.listen(app.get("port"), function(err) {
+	if (err)
+		throw err;
 	console.log('Server ready and listening on port ' + app.get('port'));
-
 });
-
-
 
