@@ -22,7 +22,7 @@ exports.populate = function() {
 			if (err) reject(err);
 			console.log("Created teacher and student, inserting schedule slot");
 			
-			models.User.findOne({ username: "aeinstein "}).exec(function(err, einstein) {
+			models.User.findOne({ username: "aeinstein"}).exec(function(err, einstein) {
 				new models.ScheduleSlot({
 					time: new Date(),
 					teacher: einstein

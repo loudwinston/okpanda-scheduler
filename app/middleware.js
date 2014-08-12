@@ -1,14 +1,15 @@
-
+//This is crap
 exports.checkLogin = function(req, res,next) {
 	
 	var isHome = req.url == '/';
 	var isLoginPage = req.url.indexOf("/login") == 0;
 	console.log("LOGIN PAGE? " + isLoginPage);
 	var isPopulate = req.url == "/populate"; 
+	var isSlots = req.url == "/slots"; 
 	var userLoggedIn = req.session && req.session.username;
 
 	//allow the request to continue if isLoginPagin || isLoginAttempt || userLoggedIn
-	if (userLoggedIn || isLoginPage || isPopulate) {
+	if (userLoggedIn || isLoginPage || isPopulate || isSlots ) {
 		console.log("user is logged in");
 		next();
 	}

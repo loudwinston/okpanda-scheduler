@@ -45,10 +45,11 @@
 
 				$("#addSlotButton").click(function() {
 					var dateVal = $("#addSlotDatePicker").val();
-					var timeVal = $("#addSlotTimePicker").val();
+					var startTimeVal = $("#addSlotStartTimePicker").val();
+					var endTimeVal = $("#addSlotEndTimePicker").val();
 
-					if (!dateVal || !timeVal) {
-						alert("Please provide both a date and time for your new slot");
+					if (!dateVal || !startTimeVal || !endTimeVal) {
+						alert("Please provide a date, start and end times for your availability");
 						return;
 					}
 
@@ -56,13 +57,12 @@
 					var selectedDate = new Date(Date.parse(dateVal));
 
 					//This timepicker API is shit
-					var selectedDateTime = $('#addSlotTimePicker').timepicker('getTime', selectedDate);
+					var selectedStartDateTime = $('#addSlotStartTimePicker').timepicker('getTime', selectedDate);
+					var selectedEndDateTime = $('#addSlotEndTimePicker').timepicker('getTime', selectedDate);
 					
-					var url = "/teacher/createSlot/"+selectedDateTime.getTime();
+					var url = "/teacher/availability/add/"+selectedStartDateTime.getTime() + "/ " + selectedEndDateTime.getTime();
 
-					$.post(url, function(res) {
-						//TODO: Handle errors
-						//TODO: AJAX
+					$.post(url, function(data) {
 						alert("Slot added successfully");
 						window.location.reload();
 					})
@@ -101,11 +101,12 @@
 	<% if (isTeacher) {%>
 	<div id="addSlotContainer">
 		<fieldset>
-			<legend>Add a new time slot: </legend>
+			<legend>Add new availability: </legend>
 		
 		
 		Date <input type="text" class="datepicker" id="addSlotDatePicker"/>
-		Time <input type="text" class="timepicker ui-timepicker-input" id="addSlotTimePicker"/>
+		From <input type="text" class="timepicker ui-timepicker-input" id="addSlotStartTimePicker"/>
+		To <input type="text" class="timepicker ui-timepicker-input" id="addSlotEndTimePicker"/>
 		<button id="addSlotButton">Add Slot</button>
 		</fieldset>
 	</div>
@@ -122,9 +123,18 @@
 				<ul>
 				<% slots.forEach(function(slot) { %>
 				<li><%= moment(slot.time).format('dddd MMMM Do YYYY, h:mm a')%>
-				<% if (!isTeacher) { %>
+				<% if (isTeacher) { %>
+					
+					<% if (slot.student) { %>
+					<strong>Claimed by <%=slot.student.name%></strong>
+					<% } else { %>
+					<strong>Unclaimed</strong>
+					<% } %>
+				<% } else { %>
 				<button class="claimSlotButton" slotId="<%=slot._id%>">Claim slot</button>
-				<% } %> </li>
+				<% } %> 
+
+				</li>
 
 				<% }) %>
 				</ul>

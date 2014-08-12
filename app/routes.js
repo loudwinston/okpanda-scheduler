@@ -21,10 +21,13 @@ function getWeekBounds(date) {
 
 
 
-function getDateFromRequest(req) {
+function getDateFromRequest(req, paramName) {
+	if (!paramName) paramName = "date";
 	var date = null;
-	if (req.params.date) {
-		date = new Date(parseInt(req.params.date));
+	var val = req.params[paramName];
+
+	if (val) {
+		date = new Date(parseInt(val));
 	}
 	else {
 		date = new Date();
@@ -53,7 +56,7 @@ function getTeacherSchedule(teacherUsername, date, openOnly, cb) {
 			query.student = null
 		}
 		//get the teacheres schedule slots
-		models.ScheduleSlot.find(query).lean().exec(function(err, slots) {
+		models.ScheduleSlot.find(query).populate("teacher").populate("student").lean().exec(function(err, slots) {
 			console.log("slots is " + slots)
 			cb({ teacher: teacher, slots: slots, startDate: week.first });	
 		})
@@ -148,25 +151,52 @@ exports.setupRoutes = function(app) {
 	})
 	
 	//Time should be a UNIX timestamp
-	app.post("/teacher/createSlot/:date", function(req, res) {
-		var date = getDateFromRequest(req);
+	app.post("/teacher/availability/add/:start/:end", function(req, res) {
+		var startTime = getDateFromRequest(req, "start");
+		var endTime = getDateFromRequest(req, "end");
 
+		console.log("start time is " + startTime);
+		console.log("end time is " + endTime);
 		models.User.findOne({username: req.session.username}).exec(function(err, teacher) {
-			new models.ScheduleSlot({
-				time: date,
-				teacher: teacher
-			}).save(function() {
-				//TODO: Check for errors, send proper HTTP code
-				res.end("{ success: true }")
+			
+			var slots = []
+			//Divide the availability into half hour chunks
+			var curr = startTime;
+			
+			while (curr.getTime() < endTime.getTime()) {
+				console.log("Adding slot for " + curr);
+				slots.push({
+					time: curr,
+					teacher: teacher
+				})
+
+				curr = new Date(moment(curr).add(30, 'minutes'));
+				console.log("Curr is now " + curr);
+			}
+			console.log("There are " + slots.length + " slots");
+			
+
+
+			models.ScheduleSlot.create(slots, function(err) {
+				//Setting this causes jquery .post function to not call its callback
+				//I'm probably just doing something simple wrong
+				//res.setHeader('Content-Type', 'application/json');
+				res.end("{ success: true }");
 			})
+
 		});
 	})
 
 
 
 	app.get("/slots", function(req, res) {
-		models.ScheduleSlot.find({}).lean().exec(function(err, slots) {
-			res.end(JSON.stringify(slots));
+		models.ScheduleSlot.find({}).populate("teacher").populate("student").exec(function(err, slots) {
+			
+			slots.forEach(function(slot) {
+				res.write(JSON.stringify(slot.toObject()));
+			})
+			res.end();
+			//res.end(JSON.stringify(slots.toObject()));
 		})
 	})
 
