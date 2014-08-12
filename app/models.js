@@ -1,28 +1,16 @@
-
-//TODO: Make schema definition JSON declarative
-var models = function(schema) {
-  var Song = schema.define('Song', {
-      path:         { type: String },
-      filename:     { type: String },
-      artist:       { type: String },
-      title:        { type: String },
-      displayname:  { type: String },
-      lyrics:       { type: String }
-  });
+var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
 
 
-  var Singer = schema.define('Singer', {
-      order:        { type: Number },
-      name:         { type: String }
-  });
+module.exports.User = mongoose.model("User", new Schema({
+	name: String,
+	username: String,
+	isTeacher: Boolean	
+}));
 
-  // setup relationships
-  Singer.belongsTo(Song,   { as: 'singer', foreignKey: "songId" } );
+module.exports.ScheduleSlot = mongoose.model("ScheduleSlot", new Schema({
+	time: Date, //indicates when the slot starts.  all slots are 30 minutes
+	teacher: { type: Schema.ObjectId, ref: 'User'},
+	student: { type: Schema.ObjectId, ref: 'User'},
 
-  models.schema = schema;
-  models.Song = Song;
-  models.Singer = Singer;
-
-}
-
-module.exports = models;
+}));
