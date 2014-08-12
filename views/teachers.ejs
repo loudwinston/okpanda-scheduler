@@ -1,0 +1,19 @@
+<DOCTYPE html>
+
+<html>
+	<head>
+	</head>
+	<body>
+	
+	<ul>
+	<%
+		teachers.forEach(function(teacher) {
+	%>
+	<li><a href="/schedule/<%=teacher.username%>"><%=teacher.name%></a></li>
+	<%
+		})
+	%>
+
+	</ul>
+	</body>
+</html>

@@ -1,0 +1,142 @@
+<DOCTYPE html>
+
+<html>
+	<head>
+		<script src="/public/javascripts/moment.js"></script>
+		<link rel="stylesheet" href="//code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+		 <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+		 <script src="//code.jquery.com/ui/1.11.0/jquery-ui.js"></script>
+		 <script src="/public/javascripts/timepicker/jquery.timepicker.js"></script>
+		 <link rel="stylesheet" type="text/css" href="/public/javascripts/timepicker/jquery.timepicker.css" />
+		 <script>
+
+		 
+
+		 $(function() {
+		 	
+		 	var defaultDate = new Date(<%=date.getTime()%>)
+		 	
+		 	var isTeacher = <%=isTeacher%>;
+
+		 	$(".datepicker").datepicker();
+		 	$(".timepicker").timepicker();
+			var scheduleDatePicker = $("#scheduleDatePicker");
+			
+			scheduleDatePicker.datepicker("setDate", defaultDate);
+
+			//TODO: Make this a JSON call, use backbone
+			scheduleDatePicker.change(function(val) {
+				var val = scheduleDatePicker.val();
+				var selectedDate = new Date(Date.parse(val));
+				
+
+				
+				<% if (isTeacher) { %>
+				document.location.href = "/teacher/"+selectedDate.getTime();	
+				<% } else { %>
+				
+				document.location.href = "/schedule/<%=teacher.username%>/"+selectedDate.getTime();
+				<%}%>
+			})
+
+
+
+			<% if (isTeacher) { %>
+
+				$("#addSlotButton").click(function() {
+					var dateVal = $("#addSlotDatePicker").val();
+					var timeVal = $("#addSlotTimePicker").val();
+
+					if (!dateVal || !timeVal) {
+						alert("Please provide both a date and time for your new slot");
+						return;
+					}
+
+
+					var selectedDate = new Date(Date.parse(dateVal));
+
+					//This timepicker API is shit
+					var selectedDateTime = $('#addSlotTimePicker').timepicker('getTime', selectedDate);
+					
+					var url = "/teacher/createSlot/"+selectedDateTime.getTime();
+
+					$.post(url, function(res) {
+						//TODO: Handle errors
+						//TODO: AJAX
+						alert("Slot added successfully");
+						window.location.reload();
+					})
+
+					
+				})
+
+
+
+
+
+
+			<% } else { %>
+				$(".claimSlotButton").click(function() {
+
+					var slotId = $(this).attr("slotId");
+					
+					
+					var url = "/student/claimSlot/"+slotId;
+					$.post(url, function() {
+						alert("Slot claimed successfully!");
+						window.location.reload();
+					})
+				})
+			<% } %>
+
+
+		 })
+		 </script>
+	</head>
+	<body>
+	<h1>Schedule for <%=teacher.name%></h1>
+
+
+
+	<% if (isTeacher) {%>
+	<div id="addSlotContainer">
+		<fieldset>
+			<legend>Add a new time slot: </legend>
+		
+		
+		Date <input type="text" class="datepicker" id="addSlotDatePicker"/>
+		Time <input type="text" class="timepicker ui-timepicker-input" id="addSlotTimePicker"/>
+		<button id="addSlotButton">Add Slot</button>
+		</fieldset>
+	</div>
+	<% }%>
+
+	
+
+
+	<div id="scheduleContainer">
+		<fieldset>
+			<legend>Schedule for week of  <input type="text" class="datepicker" id="scheduleDatePicker"/></legend>
+			
+			<% if (slots && slots.length > 0) { %>
+				<ul>
+				<% slots.forEach(function(slot) { %>
+				<li><%= moment(slot.time).format('dddd MMMM Do YYYY, h:mm a')%>
+				<% if (!isTeacher) { %>
+				<button class="claimSlotButton" slotId="<%=slot._id%>">Claim slot</button>
+				<% } %> </li>
+
+				<% }) %>
+				</ul>
+			<% } else { %>
+				No Available Slots
+			<% } %>
+			
+
+		</fieldset>
+		
+	</div>
+	
+
+	</body>
+</html>

@@ -1,0 +1,19 @@
+<DOCTYPE html>
+
+<html>
+	<head>
+		<link rel="stylesheet" href="//code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+		 <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+		 <script src="//code.jquery.com/ui/1.11.0/jquery-ui.js"></script>
+	</head>
+	<body>
+	<h1>Welcome Student!</h1>
+	<h3>Choose a teacher to view their schedule</h3>
+
+	<ul>
+	<% teachers.forEach(function(teacher) { %>
+	<li><a href="/schedule/<%=teacher.username%>"><%=teacher.name%></a></li>
+	<% }) %>
+	</ul>
+	</body>
+</html>

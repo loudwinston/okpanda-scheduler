@@ -1,0 +1,20 @@
+<DOCTYPE html>
+
+<html>
+	<head>
+	</head>
+	<body>
+	
+	<h1>Login as</h1>
+	<ul>
+	<%
+		users.forEach(function(user) {
+	%>
+	<li><a href="/login/<%=user.username%>"><%=user.name%></a> (<%=user.isTeacher ? "Teacher" : "Student"%>)</li>
+	<%
+		})
+	%>
+
+	</ul>
+	</body>
+</html>
