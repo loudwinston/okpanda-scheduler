@@ -8,7 +8,8 @@
     "mongoose": "^3.8.14",
     "optimist": "*",
     "socket.io": "*",
-    "socket.io-wildcard": "~0.1.1"
+    "socket.io-wildcard": "~0.1.1",
+    "bluebird" : "*"
   },
 
   "devDependencies": {
